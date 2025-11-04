@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
 """
 Shield & Spear - Cybersecurity Training Platform
-Main Application Entry Point
+Database Initialization Script for Hosting
 """
 
-# eventlet requires monkey patching to be applied before other imports
-import gevent.monkey
-gevent.monkey.patch_all()
-
 import os
-import sys
-from app import create_app, socketio
+from app import create_app
 from app.models import db, User, Challenge
 from app.init_challenges import get_challenges
 
@@ -18,12 +13,12 @@ from app.init_challenges import get_challenges
 app = create_app()
 
 def init_database():
-    """Initialize database with admin user and challenges"""
+    """Initialize database with admin user and pre-built challenges"""
     with app.app_context():
-        # Create tables
+        # Create all tables if they don't exist
         db.create_all()
         
-        # Check if admin user exists
+        # Create admin user if not exists
         admin = User.query.filter_by(username='admin').first()
         if not admin:
             admin = User(
@@ -35,11 +30,12 @@ def init_database():
             admin.set_password('admin123')
             db.session.add(admin)
             print("✓ Created admin user: admin / admin123")
+        else:
+            print("✓ Admin user already exists")
         
         # Add pre-built challenges
         challenges_data = get_challenges()
         added_count = 0
-        
         for challenge_data in challenges_data:
             existing = Challenge.query.filter_by(title=challenge_data['title']).first()
             if not existing:
@@ -52,29 +48,6 @@ def init_database():
         print(f"✓ Total challenges in database: {Challenge.query.count()}")
 
 if __name__ == '__main__':
-    # Initialize database
+    print("🔹 Initializing database for hosting...")
     init_database()
-    
-    # Run the application
-    port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_ENV', 'development') == 'development'
-    
-    print(f"""
-    ╔════════════════════════════════════════════════════════════╗
-    ║       Shield & Spear - Cybersecurity Training Platform        ║
-    ║                                                                ║
-    ║   Server running on: http://localhost:{port}                    ║
-    ║   Admin credentials: admin / admin123                         ║
-    ║                                                                ║
-    ║   Features:                                                   ║
-    ║   ✓ 5 Pre-built Challenges (Attack & Defense)               ║
-    ║   ✓ AI Bot Opponent with 3 Difficulty Levels               ║
-    ║   ✓ Co-op Mode with Invite Codes                            ║
-    ║   ✓ Real-time Event Logs                                    ║
-    ║   ✓ Full Admin Panel                                        ║
-    ║                                                                ║
-    ║   Press Ctrl+C to stop the server                            ║
-    ╚════════════════════════════════════════════════════════════╝
-    """)
-    
-    socketio.run(app, host='0.0.0.0', port=port, debug=debug, allow_unsafe_werkzeug=True)
+    print("✅ Database initialization completed. Ready for deployment.")
