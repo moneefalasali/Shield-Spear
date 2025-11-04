@@ -4,6 +4,14 @@ Shield & Spear - Cybersecurity Training Platform
 Main Application Entry Point
 """
 
+# eventlet requires monkey patching to be applied before other imports
+try:
+    import eventlet
+    eventlet.monkey_patch()
+except Exception:
+    # If eventlet is not available, continue; deployment environments should install it
+    pass
+
 import os
 import sys
 from app import create_app, socketio
