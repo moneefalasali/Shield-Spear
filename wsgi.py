@@ -1,17 +1,7 @@
-"""WSGI entrypoint for Gunicorn with eventlet.
+"""WSGI entrypoint for Gunicorn with Gevent WebSocket."""
 
-This module applies eventlet monkey patching before importing the
-application so that sockets and threading are patched correctly.
-It exposes the variable `application` which is the WSGI app that
-Gunicorn should serve.
-"""
-
-try:
-    import eventlet
-    eventlet.monkey_patch()
-except Exception:
-    # If eventlet isn't available in some environments, continue anyway.
-    pass
+import gevent.monkey
+gevent.monkey.patch_all()
 
 from app import create_app, socketio
 
