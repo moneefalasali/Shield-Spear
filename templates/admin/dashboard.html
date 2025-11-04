@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+    <h1 class="page-title">Admin Dashboard</h1>
+    
+    <!-- Statistics Cards -->
+    <div class="category-cards" style="margin-bottom: 3rem;">
+        <div class="gradient-card">
+            <h3 style="font-size: 3rem; color: #7c5cdb;">{{ total_users }}</h3>
+            <p>Total Users</p>
+        </div>
+        <div class="gradient-card">
+            <h3 style="font-size: 3rem; color: #7c5cdb;">{{ total_challenges }}</h3>
+            <p>Challenges</p>
+        </div>
+        <div class="gradient-card">
+            <h3 style="font-size: 3rem; color: #7c5cdb;">{{ total_attempts }}</h3>
+            <p>Attempts</p>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="gradient-card" style="margin-bottom: 2rem;">
+        <h3 style="margin-bottom: 1.5rem;">Quick Actions</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <a href="{{ url_for('admin.manage_challenges') }}" class="btn btn-primary">Manage Challenges</a>
+            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-primary">Manage Users</a>
+            <a href="{{ url_for('admin.view_sessions') }}" class="btn btn-primary">View Sessions</a>
+            <a href="{{ url_for('admin.view_logs') }}" class="btn btn-primary">View Logs</a>
+            <button onclick="resetLeaderboard()" class="btn btn-outline">Reset Leaderboard</button>
+        </div>
+    </div>
+    
+    <!-- Recent Logs -->
+    <div class="gradient-card">
+        <h3 style="margin-bottom: 1.5rem;">Recent Admin Actions</h3>
+        {% if recent_logs %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Admin</th>
+                        <th>Target</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td>{{ log.action }}</td>
+                        <td>{{ log.admin.username }}</td>
+                        <td>{{ log.target_type or '-' }}</td>
+                        <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">No recent actions</p>
+        {% endif %}
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function resetLeaderboard() {
+    if (!confirm('Are you sure you want to reset the leaderboard? This will delete ALL challenge attempts!')) {
+        return;
+    }
+    
+    fetch('/admin/leaderboard/reset', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Leaderboard reset successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to reset leaderboard');
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

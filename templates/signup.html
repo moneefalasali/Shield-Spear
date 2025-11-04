@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; margin-top: 3rem;">
+    <div class="gradient-card">
+        <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: white;">Sign Up</h2>
+        <p style="color: rgba(255,255,255,0.7); margin-bottom: 2rem;">Create your account.</p>
+        
+        <form method="POST" action="{{ url_for('auth.signup') }}">
+            <div class="form-group">
+                <label for="username">USERNAME</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">EMAIL</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="Email Address" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="full_name">FULL NAME (Optional)</label>
+                <input type="text" id="full_name" name="full_name" class="form-control" placeholder="Full Name">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">PASSWORD</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="••••••" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">CONFIRM PASSWORD</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="••••••" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Sign Up</button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 1.5rem; color: rgba(255,255,255,0.7);">
+            Already have an account? <a href="{{ url_for('auth.login') }}" style="color: #7c5cdb;">Login</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

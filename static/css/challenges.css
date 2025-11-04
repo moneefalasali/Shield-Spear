@@ -1,0 +1,287 @@
+/* Challenges Page Styles */
+
+.challenges-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: calc(100vh - 200px);
+}
+
+.challenges-header {
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.challenges-header.blue-team {
+    border-bottom-color: #0284c7;
+}
+
+.challenges-header.red-team {
+    border-bottom-color: #dc2626;
+}
+
+.challenges-header.coop-team {
+    border-bottom-color: #7c3aed;
+}
+
+.header-content h1 {
+    margin-bottom: var(--spacing-sm);
+}
+
+.header-content p {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+}
+
+.challenges-content {
+    padding: 0 var(--spacing-lg) var(--spacing-2xl);
+}
+
+.session-controls {
+    margin-bottom: var(--spacing-2xl);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+}
+
+.control-group h3 {
+    margin-bottom: var(--spacing-md);
+}
+
+.control-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.challenges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.challenge-card {
+    background: linear-gradient(180deg, rgba(124,58,237,0.08), rgba(21,7,40,0.18));
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 28px;
+    padding: 28px;
+    transition: all var(--transition-base);
+    cursor: pointer;
+    box-shadow: 0 20px 50px rgba(5,5,10,0.6);
+}
+
+.challenge-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(139,92,246,0.8);
+    box-shadow: 0 30px 80px rgba(99,102,241,0.12);
+}
+
+.challenge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: var(--spacing-md);
+}
+
+.challenge-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+}
+
+.challenge-difficulty {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.difficulty-easy {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.difficulty-medium {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.difficulty-hard {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.challenge-description {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.9rem;
+}
+
+.challenge-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    margin-top: var(--spacing-md);
+}
+
+.challenge-points {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.loading {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-muted);
+}
+
+.loading .spinner {
+    margin: 0 auto var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+    .challenges-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .control-buttons {
+        flex-direction: column;
+    }
+}
+
+/* --- Interactive attack / defend visual effects --- */
+.attack-effect, .defend-effect, .impact-spark {
+    pointer-events: none;
+    position: absolute;
+    z-index: 60;
+    will-change: transform, opacity;
+}
+
+/* attack swipe: slides from left to right with purple energy */
+.attack-effect {
+    width: 220px;
+    height: 36px;
+    border-radius: 20px;
+    background: linear-gradient(90deg, rgba(124,58,237,0.95), rgba(200,110,237,0.85));
+    box-shadow: 0 6px 30px rgba(124,58,237,0.22), 0 1px 8px rgba(124,58,237,0.12) inset;
+    transform-origin: left center;
+    animation: attack-swipe 520ms ease-out forwards;
+}
+
+@keyframes attack-swipe {
+    0% { transform: translateX(-40%) scaleX(0.2); opacity: 0.0; }
+    30% { transform: translateX(0%) scaleX(0.9); opacity: 0.95; }
+    80% { transform: translateX(40%) scaleX(1.05); opacity: 0.7; }
+    100% { transform: translateX(80%) scaleX(1.1); opacity: 0; }
+}
+
+/* defend shield pulse */
+.defend-effect {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(123,97,255,0.35), rgba(123,97,255,0.06) 45%);
+    box-shadow: 0 10px 40px rgba(123,97,255,0.12), 0 0 24px rgba(123,97,255,0.06) inset;
+    transform: translate(-50%, -50%) scale(0.4);
+    animation: shield-pulse 760ms cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+@keyframes shield-pulse {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+    35% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.05); }
+    75% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+}
+
+/* impact sparks at contact point */
+.impact-spark {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff8, #ffe0ff 40%, rgba(200,110,237,0.9));
+    box-shadow: 0 0 18px rgba(255,200,255,0.9), 0 0 6px rgba(200,110,237,0.6);
+    animation: spark-pop 420ms ease-out forwards;
+}
+
+@keyframes spark-pop {
+    0% { transform: scale(0.2); opacity: 1; }
+    60% { transform: scale(1.4); opacity: 0.9; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* HP flash (used to briefly indicate damage or heal) */
+.hp-flash {
+    position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 55;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0));
+    animation: hp-flash 360ms ease-out forwards;
+}
+@keyframes hp-flash {
+    0% { opacity: 0.9; transform: scale(1.02); }
+    100% { opacity: 0; transform: scale(1.0); }
+}
+
+/* reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .attack-effect, .defend-effect, .impact-spark, .hp-flash { animation-duration: 120ms !important; opacity: 0.8 !important; }
+}
+
+/* Utility helper for placing effects inside a card */
+.card-effect-anchor { position: relative; overflow: visible; }
+
+/* Player card base styling for effects anchoring */
+.player-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 84px;
+    box-shadow: 0 8px 30px rgba(5,5,10,0.45);
+}
+
+/* attack-effect variants and direction-aware class */
+.attack-effect { height: 28px; border-radius: 18px; width: 160px; }
+.attack-effect.small { width: 120px; height: 22px; border-radius: 14px; }
+.attack-effect.large { width: 260px; height: 40px; border-radius: 22px; }
+.attack-effect.from-right { transform-origin: right center; background: linear-gradient(270deg, rgba(124,58,237,0.95), rgba(200,110,237,0.85)); }
+.attack-effect.from-left { transform-origin: left center; background: linear-gradient(90deg, rgba(124,58,237,0.95), rgba(200,110,237,0.85)); }
+
+@keyframes attack-swipe-right {
+    0% { transform: translateX(40%) scaleX(0.2); opacity: 0; }
+    30% { transform: translateX(0%) scaleX(0.9); opacity: 0.95; }
+    80% { transform: translateX(-40%) scaleX(1.05); opacity: 0.7; }
+    100% { transform: translateX(-80%) scaleX(1.1); opacity: 0; }
+}
+
+@keyframes attack-swipe-left {
+    0% { transform: translateX(-40%) scaleX(0.2); opacity: 0; }
+    30% { transform: translateX(0%) scaleX(0.9); opacity: 0.95; }
+    80% { transform: translateX(40%) scaleX(1.05); opacity: 0.7; }
+    100% { transform: translateX(80%) scaleX(1.1); opacity: 0; }
+}
+
+.attack-effect.from-left { animation: attack-swipe-left 520ms ease-out forwards; }
+.attack-effect.from-right { animation: attack-swipe-right 520ms ease-out forwards; }
+
+/* impact spread: multiple small sparks */
+.impact-spark { width: 10px; height: 10px; }
+
+/* cooldown badge styling */
+.cooldown-badge {
+    background: linear-gradient(90deg,#ffbaba,#ffc4d6);
+    color: #2b0a0a;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+
+/* player HP bar accent colors */
+.player-card .player-hp { background: linear-gradient(90deg,#ff6b6b,#7b61ff); }
+
+

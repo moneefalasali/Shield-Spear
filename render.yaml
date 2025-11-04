@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: shieldandspear-web
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -k eventlet -w 1 run:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+    autoDeploy: true
+    instances: 1
+    routes:
+      - type: http
+        port: 10000
+
+databases:
+  - name: shieldandspear-db
+    engine: postgres
+    plan: starter
+
+cron:
+  - name: cleanup
+    schedule: "@daily"
+    command: python tools/cleanup.py

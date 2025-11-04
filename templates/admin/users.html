@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+    <h1 class="page-title">Manage Users</h1>
+    
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">Back to Dashboard</a>
+    </div>
+    
+    <div class="gradient-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Score</th>
+                    <th>Admin</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td><strong>{{ user.username }}</strong></td>
+                    <td>{{ user.email }}</td>
+                    <td style="color: #7c5cdb;">{{ user.get_total_score() }}</td>
+                    <td>
+                        {% if user.is_admin %}
+                            <span style="color: #7c5cdb;">✓</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_active %}
+                            <span style="color: #4CAF50;">✓ Active</span>
+                        {% else %}
+                            <span style="color: #ff6b6b;">✗ Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button onclick="toggleUser('{{ user.id }}')"
+                                class="btn btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.85rem;">
+                            {{ 'Deactivate' if user.is_active else 'Activate' }}
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function toggleUser(userId) {
+    fetch(`/admin/users/${userId}/toggle`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to toggle user status');
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

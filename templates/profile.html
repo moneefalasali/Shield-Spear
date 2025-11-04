@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+    <h1 class="page-title">Player Profile</h1>
+    
+    <div class="gradient-card" style="margin-bottom: 2rem;">
+        <div style="text-align: center;">
+            <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #7c5cdb, #5a3fb5); display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto 1rem;">
+                {{ current_user.username[0]|upper }}
+            </div>
+            <h2>{{ current_user.username }}</h2>
+            {% if current_user.full_name %}
+                <p style="color: rgba(255,255,255,0.7);">{{ current_user.full_name }}</p>
+            {% endif %}
+            <p style="color: rgba(255,255,255,0.7);">{{ current_user.email }}</p>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem;">
+            <div style="text-align: center; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <h3 style="color: #7c5cdb; font-size: 2.5rem;">{{ total_score }}</h3>
+                <p style="color: rgba(255,255,255,0.7);">Total Score</p>
+            </div>
+            <div style="text-align: center; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <h3 style="color: #7c5cdb; font-size: 2.5rem;">#{{ rank }}</h3>
+                <p style="color: rgba(255,255,255,0.7);">Global Rank</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Challenge History -->
+    <div class="gradient-card">
+        <h3 style="margin-bottom: 1.5rem;">Challenge History</h3>
+        
+        {% if attempts %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Challenge</th>
+                        <th>Category</th>
+                        <th>Score</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in attempts %}
+                    <tr>
+                        <td>{{ attempt.challenge.title }}</td>
+                        <td>
+                            <span style="padding: 0.25rem 0.75rem; background: {% if attempt.challenge.category == 'red' %}rgba(255, 107, 107, 0.2){% elif attempt.challenge.category == 'blue' %}rgba(107, 107, 255, 0.2){% else %}rgba(124, 92, 219, 0.2){% endif %}; border-radius: 4px; font-size: 0.85rem;">
+                                {{ attempt.challenge.category|title }}
+                            </span>
+                        </td>
+                        <td><strong style="color: #7c5cdb;">{{ attempt.score }}</strong></td>
+                        <td style="color: rgba(255,255,255,0.7);">{{ attempt.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if attempt.is_correct %}
+                                <span style="color: #4CAF50;">✓ Passed</span>
+                            {% else %}
+                                <span style="color: #ff6b6b;">✗ Failed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">
+                No challenges completed yet. <a href="{{ url_for('main.trials') }}" style="color: #7c5cdb;">Start your first challenge!</a>
+            </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

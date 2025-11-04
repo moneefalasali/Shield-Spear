@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Co-op Play - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+    <div class="gradient-card">
+        <h2 style="margin-bottom: 1rem;">Co-op Session {{ session.session_code }}</h2>
+        <p style="color: rgba(255,255,255,0.8); margin-bottom: 0.5rem;">Challenge: {{ challenge.title }}</p>
+        <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;">You are on the <strong>{{ user_team|title }}</strong> team.</p>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <strong>Challenge Description:</strong>
+                <p style="margin-top: 0.5rem; color: rgba(255,255,255,0.85);">{{ challenge.description }}</p>
+            </div>
+        </div>
+
+        <!-- Structured 3-column layout to keep elements organized -->
+        <div style="display:grid; grid-template-columns: 260px 1fr 300px; gap:1rem; margin-top:1rem; align-items:start;">
+            <!-- Left column: participants and action buttons -->
+            <div>
+                <div style="padding:0.75rem; background:rgba(255,255,255,0.03); border-radius:8px;">
+                    <h4 style="margin:0 0 0.5rem 0;">Participants</h4>
+                    <div id="participantsPanel">
+                        <!-- participant cards will be rendered here by JS -->
+                    </div>
+                </div>
+
+                <div style="margin-top:0.75rem; padding:0.6rem; background:rgba(255,255,255,0.02); border-radius:8px;">
+                    <h4 style="margin:0 0 0.5rem 0;">Actions</h4>
+                    <div id="actionPanel">
+                        <!-- action buttons injected by JS if not present -->
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap">
+                            <button class="btn btn-small" data-action="probe" title="Shortcut: 1">🔎 Probe <span class="btn-cd" style="margin-left:6px;opacity:0.9;font-size:0.8rem"></span></button>
+                            <button class="btn btn-small" data-action="exploit" title="Shortcut: 2">⚡ Exploit <span class="btn-cd" style="margin-left:6px;opacity:0.9;font-size:0.8rem"></span></button>
+                            <button class="btn btn-small" data-action="sanitize" title="Shortcut: 3">🧹 Sanitize <span class="btn-cd" style="margin-left:6px;opacity:0.9;font-size:0.8rem"></span></button>
+                            <button class="btn btn-small" data-action="monitor" title="Shortcut: 4">📡 Monitor <span class="btn-cd" style="margin-left:6px;opacity:0.9;font-size:0.8rem"></span></button>
+                            <button class="btn btn-small" data-action="report" title="Shortcut: 5">📝 Report <span class="btn-cd" style="margin-left:6px;opacity:0.9;font-size:0.8rem"></span></button>
+                        </div>
+                        <div style="margin-top:0.5rem; font-size:0.85rem; color:rgba(255,255,255,0.75)">Tip: Use number keys 1-5 to activate actions quickly.</div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; margin-top:0.75rem;">
+                        <button id="readyBtn" class="btn btn-primary" style="flex:1;">Mark Ready</button>
+                        <button id="leaveBtn" class="btn btn-outline" style="flex:1;">Leave</button>
+                    </div>
+                    <div style="text-align:right; margin-top:0.5rem;">
+                        <button id="muteBtn" class="btn btn-outline">🔊</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center column: challenge description / arena -->
+            <div>
+                <div style="padding:1rem; background:rgba(255,255,255,0.04); border-radius:8px;">
+                    <strong>Challenge Description:</strong>
+                    <p style="margin-top:0.5rem; color: rgba(255,255,255,0.85);">{{ challenge.description }}</p>
+                    <!-- main arena placeholder for future visuals -->
+                    <div id="arena" style="margin-top:1rem; min-height:220px; background:linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.06)); border-radius:8px; padding:0.75rem; display:flex; align-items:center; justify-content:center;">
+                        <div style="color:rgba(255,255,255,0.7)">Arena / Playfield (visual effects will appear here)</div>
+                        </div>
+                        <!-- Typed action / code input to allow writing payloads instead of only clicking buttons -->
+                        <div style="margin-top:0.75rem;">
+                            <label for="actionInput" style="display:block;margin-bottom:0.4rem;color:rgba(255,255,255,0.8)"><strong>Type action or payload</strong> <span style="font-weight:400;font-size:0.85rem;color:rgba(255,255,255,0.65)">(prefix with action name like "exploit SELECT ..." or press 1-5 for shortcuts)</span></label>
+                            <textarea id="actionInput" rows="4" style="width:100%;font-family:monospace;background:rgba(0,0,0,0.5);color:#fff;border-radius:6px;padding:0.5rem;border:1px solid rgba(255,255,255,0.04)" placeholder="e.g. exploit SELECT * FROM users WHERE id=1 --"></textarea>
+                            <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                                <button id="sendActionBtn" class="btn btn-primary">Send</button>
+                                <button id="clearActionBtn" class="btn btn-outline">Clear</button>
+                                <div style="margin-left:auto;color:rgba(255,255,255,0.7);font-size:0.85rem;align-self:center">Submit: Ctrl+Enter</div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+
+            <!-- Right column: live log and scoreboard -->
+            <div>
+                <div class="event-log" id="eventLog" style="padding:0.75rem; background:rgba(0,0,0,0.35); border-radius:8px; max-height:360px; overflow:auto;">
+                    <h4 style="margin-bottom:0.5rem;">Live Session Log</h4>
+                    <div id="events">
+                        <div class="event-item"><strong>System:</strong> Waiting for other participant...</div>
+                    </div>
+                </div>
+
+                <div id="scoreboardWrap" style="margin-top:0.75rem;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('main.trials') }}" class="btn btn-outline">Back to Trials</a>
+    </div>
+</div>
+
+{% block extra_js %}
+<!-- Use CDN-hosted Socket.IO client to avoid server-side script serving issues -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js" integrity="" crossorigin="anonymous"></script>
+<script id="coop-context" type="application/json">{{ {
+    'session_id': session.id,
+    'session_code': session.session_code,
+    'is_creator': is_creator,
+    'current_user_id': current_user.id
+}|tojson }}</script>
+<script src="{{ url_for('static', filename='js/coop_play.js') }}"></script>
+{% endblock %}
+{% endblock %}

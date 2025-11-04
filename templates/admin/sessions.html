@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Co-op Sessions - Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+    <h1 class="page-title">Co-op Sessions</h1>
+    
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">Back to Dashboard</a>
+    </div>
+    
+    <div class="gradient-card">
+        {% if sessions %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Creator</th>
+                        <th>Challenge</th>
+                        <th>Status</th>
+                        <th>Participants</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td><strong style="color: #7c5cdb;">{{ session.session_code }}</strong></td>
+                        <td>{{ session.creator.username }}</td>
+                        <td>{{ session.challenge.title }}</td>
+                        <td>
+                            {% if session.status == 'waiting' %}
+                                <span style="color: #FFA500;">Waiting</span>
+                            {% elif session.status == 'in_progress' %}
+                                <span style="color: #4CAF50;">In Progress</span>
+                            {% else %}
+                                <span style="color: rgba(255,255,255,0.5);">Completed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ session.participants|length }}</td>
+                        <td>{{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">No co-op sessions found</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

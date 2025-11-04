@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Red Team - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 4rem;">
+    <h1 class="page-title">Red Team</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem;">
+        Select a challenge below:
+    </p>
+    
+    <div class="gradient-card" style="max-width: 800px; margin: 0 auto;">
+        <h3 style="margin-bottom: 1.5rem;">Choose Challenge:</h3>
+        
+        <div class="form-group">
+            <select id="challengeSelect" class="form-control" style="font-size: 1.1rem; padding: 1.25rem;">
+                <option value="">-- Select a challenge --</option>
+                {% for challenge in challenges %}
+                    <option value="{{ challenge.id }}" data-difficulty="{{ challenge.difficulty }}">
+                        {{ challenge.title }} ({{ challenge.difficulty|title }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div id="challengeInfo" style="display: none; margin-top: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+            <h4 id="challengeTitle" style="margin-bottom: 1rem;"></h4>
+            <p id="challengeDescription" style="color: rgba(255,255,255,0.8);"></p>
+            <p style="margin-top: 1rem;">
+                <strong>Difficulty:</strong> <span id="challengeDifficulty" class="badge"></span><br>
+                <strong>Max Score:</strong> <span id="challengeScore"></span><br>
+                <strong>Time Limit:</strong> <span id="challengeTime"></span>
+            </p>
+        </div>
+        
+        <button id="startBtn" class="btn btn-primary" style="width: 100%; margin-top: 2rem; display: none;">
+            Start Challenge
+        </button>
+    </div>
+    
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('main.trials') }}" class="btn btn-outline">Back</a>
+    </div>
+</div>
+
+{% block extra_js %}
+<!-- Embed challenges safely as JSON text to avoid breaking the surrounding <script> if any challenge text contains </script> -->
+<script type="application/json" id="challenges-data">{{ challenges|tojson }}</script>
+<script>
+const challenges = JSON.parse(document.getElementById('challenges-data').textContent || '[]');
+const challengeSelect = document.getElementById('challengeSelect');
+const challengeInfo = document.getElementById('challengeInfo');
+const startBtn = document.getElementById('startBtn');
+
+let selectedChallengeId = null;
+
+challengeSelect.addEventListener('change', function() {
+    selectedChallengeId = this.value;
+    
+    if (selectedChallengeId) {
+        const challenge = challenges.find(c => c.id === selectedChallengeId);
+        if (challenge) {
+            document.getElementById('challengeTitle').textContent = challenge.title;
+            document.getElementById('challengeDescription').textContent = challenge.description;
+            document.getElementById('challengeDifficulty').textContent = challenge.difficulty.toUpperCase();
+            document.getElementById('challengeScore').textContent = challenge.max_score + ' points';
+            document.getElementById('challengeTime').textContent = (challenge.time_limit / 60) + ' minutes';
+            
+            challengeInfo.style.display = 'block';
+            startBtn.style.display = 'block';
+        }
+    } else {
+        challengeInfo.style.display = 'none';
+        startBtn.style.display = 'none';
+    }
+});
+
+startBtn.addEventListener('click', function() {
+    if (selectedChallengeId) {
+        fetch(`/challenges/${selectedChallengeId}/start`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            } else {
+                alert('Error starting challenge: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to start challenge');
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

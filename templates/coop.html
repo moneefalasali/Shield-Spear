@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Co-op - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 4rem;">
+    <h1 class="page-title">CO-OP Mode</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem;">
+        Play with a friend - create a session or join using a code
+    </p>
+    
+    <div class="category-cards">
+        <!-- Create Session Card -->
+        <div class="gradient-card">
+            <h3 style="margin-bottom: 1rem;">Create Session</h3>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 2rem;">
+                Start a new co-op session and invite a friend
+            </p>
+            
+            <div class="form-group">
+                <label>Choose Your Team</label>
+                <select id="teamSelect" class="form-control">
+                    <option value="red">Red Team (Attacker)</option>
+                    <option value="blue">Blue Team (Defender)</option>
+                </select>
+            </div>
+            
+            <button id="createSessionBtn" class="btn btn-primary" style="width: 100%;">
+                Create Session
+            </button>
+            
+            <div id="sessionInfo" style="display: none; margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <p><strong>Session Code:</strong> <span id="sessionCode" style="font-size: 1.5rem; color: #7c5cdb;"></span></p>
+                <p><strong>Invite Link:</strong></p>
+                <input type="text" id="inviteLink" class="form-control" readonly style="margin-top: 0.5rem;">
+                <button onclick="copyInviteLink()" class="btn btn-outline" style="width: 100%; margin-top: 1rem;">
+                    Copy Invite Link
+                </button>
+            </div>
+        </div>
+        
+        <!-- Join Session Card -->
+        <div class="gradient-card">
+            <h3 style="margin-bottom: 1rem;">Join Session</h3>
+            <p style="color: rgba(255,255,255,0.8); margin-bottom: 2rem;">
+                Enter the session code to join your friend
+            </p>
+            
+            <div class="form-group">
+                <label>Session Code</label>
+                <input type="text" id="joinCode" class="form-control" placeholder="Enter 6-digit code" maxlength="6" style="text-transform: uppercase;">
+            </div>
+            
+            <button id="joinSessionBtn" class="btn btn-primary" style="width: 100%;">
+                Join Session
+            </button>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('main.trials') }}" class="btn btn-outline">Back</a>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+;(function(){
+    // Guard to avoid duplicate initialization if the script is injected twice
+    if (window.__coop_create_init) return; window.__coop_create_init = true;
+
+    const createSessionBtn = document.getElementById('createSessionBtn');
+    const joinSessionBtn = document.getElementById('joinSessionBtn');
+    const teamSelect = document.getElementById('teamSelect');
+    const sessionInfo = document.getElementById('sessionInfo');
+    const sessionCode = document.getElementById('sessionCode');
+    const inviteLink = document.getElementById('inviteLink');
+    const joinCode = document.getElementById('joinCode');
+
+    createSessionBtn.addEventListener('click', function() {
+    const team = teamSelect.value;
+    
+    fetch('/api/coop/create', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ team: team })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            sessionCode.textContent = data.session_code;
+            inviteLink.value = data.invite_link;
+            sessionInfo.style.display = 'block';
+            createSessionBtn.textContent = 'Waiting for friend...';
+            createSessionBtn.disabled = true;
+            
+            // Start polling for participant join
+            pollSessionStatus(data.session_id);
+        } else {
+            alert('Error creating session: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create session');
+    });
+    });
+
+    joinSessionBtn.addEventListener('click', function() {
+    const code = joinCode.value.trim().toUpperCase();
+    
+    if (!code || code.length !== 6) {
+        alert('Please enter a valid 6-digit code');
+        return;
+    }
+    
+    fetch(`/api/coop/join/${code}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect_url;
+        } else {
+            alert('Error joining session: ' + (data.error || 'Session not found'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to join session');
+    });
+    });
+
+    function copyInviteLink() {
+        inviteLink.select();
+        document.execCommand('copy');
+        alert('Invite link copied to clipboard!');
+    }
+
+    function pollSessionStatus(sessionId) {
+        // This would use WebSocket in real implementation
+        // For now, just redirect after 3 seconds for demo
+        setTimeout(() => {
+            alert('Demo: Friend would join here. Redirecting...');
+        }, 3000);
+    }
+})();
+</script>
+{% endblock %}
+{% endblock %}

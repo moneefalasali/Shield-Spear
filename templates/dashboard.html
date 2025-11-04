@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="gradient-card" style="max-width: 900px;">
+        <p style="font-size: 1.2rem; color: rgba(255,255,255,0.7); margin-bottom: 1rem;">#TrainSecure</p>
+        <h1 style="font-size: 3rem; line-height: 1.2; margin-bottom: 1rem; color: white;">
+            Defend.<br>
+            Attack.<br>
+            Learn.<br>
+            Have Fun
+        </h1>
+        <p style="font-size: 1.1rem; color: rgba(255,255,255,0.8); margin-bottom: 2rem;">
+            Join live blue-team vs red-team challenges to train skills, test strategy, or challenge a friend. 
+            No complex setup — just jump in and play.
+        </p>
+        <a href="{{ url_for('main.trials') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 3rem;">Check trials</a>
+        
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.2);">
+            <p style="color: rgba(255,255,255,0.7);">Your Score: <strong style="color: #7c5cdb; font-size: 1.5rem;">{{ user_score }}</strong></p>
+            <p style="color: rgba(255,255,255,0.7);">Your Rank: <strong style="color: #7c5cdb; font-size: 1.5rem;">#{{ user_rank }}</strong></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

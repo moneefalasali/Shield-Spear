@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ challenge.title }} - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+    <div class="gradient-card">
+        <h2 style="margin-bottom: 1rem;">{{ challenge.title }}</h2>
+        <p style="color: rgba(255,255,255,0.8); margin-bottom: 2rem;">{{ challenge.description }}</p>
+        
+        <div class="form-group">
+            <label>Your Solution</label>
+            <textarea id="solutionInput" class="form-control" rows="8" 
+                placeholder="Enter your solution here...\n\nFor SQL Injection: Try bypassing authentication\nFor XSS: Inject JavaScript code\nFor DoS: Describe your attack strategy\nFor Password: Create a strong password or describe cracking method\nFor Server Config: Describe findings or fixes"></textarea>
+        </div>
+        
+        <button id="submitBtn" class="btn btn-primary" style="width: 100%; font-size: 1.1rem;">
+            Submit Solution
+        </button>
+        
+        <!-- Live Arena -->
+        <div id="arena" style="display:flex; gap:1rem; margin-top:1.5rem; align-items:center;">
+            <div id="playerCard" style="flex:1; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; text-align:center; position:relative;">
+                <div style="font-weight:bold; color:#fff; margin-bottom:6px;">You</div>
+                <div style="height:12px; background:#333; border-radius:8px; overflow:hidden; margin:0 12px;">
+                    <div id="playerHp" style="width:100%; height:100%; background:linear-gradient(90deg,#4caf50,#8bc34a);"></div>
+                </div>
+                <div id="playerCooldown" style="margin-top:8px; font-size:12px; color:#ccc;">Ready</div>
+            </div>
+
+            <div id="effectsLayer" style="position:relative; width:120px; height:80px;">
+                <!-- attack / impact visuals -->
+            </div>
+
+            <div id="botCard" style="flex:1; padding:12px; background:rgba(255,255,255,0.03); border-radius:8px; text-align:center; position:relative;">
+                <div style="font-weight:bold; color:#fff; margin-bottom:6px;">Opponent</div>
+                <div style="height:12px; background:#333; border-radius:8px; overflow:hidden; margin:0 12px;">
+                    <div id="botHp" style="width:100%; height:100%; background:linear-gradient(90deg,#ef5350,#e53935);"></div>
+                </div>
+                <div id="botCooldown" style="margin-top:8px; font-size:12px; color:#ccc;">---</div>
+            </div>
+        </div>
+        
+        <!-- Event Log -->
+        <div class="event-log" id="eventLog" style="margin-top: 2rem;">
+            <h4 style="margin-bottom: 1rem;">Live Event Log</h4>
+            <div id="events">
+                <div class="event-item">
+                    <strong>System:</strong> Challenge started. Good luck!
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('main.trials') }}" class="btn btn-outline">Back to Trials</a>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+(function(){
+const attemptId = '{{ attempt.id }}';
+const submitBtn = document.getElementById('submitBtn');
+const solutionInput = document.getElementById('solutionInput');
+const eventsContainer = document.getElementById('events');
+const playerHpEl = document.getElementById('playerHp');
+const botHpEl = document.getElementById('botHp');
+const effectsLayer = document.getElementById('effectsLayer');
+
+let playerHp = 100;
+let botHp = 100;
+let muted = false;
+
+function playBeep(freq=440, time=0.08){
+    if(muted) return;
+    try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = freq;
+        o.connect(g);
+        g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + time);
+        setTimeout(()=>{ o.stop(); try{ctx.close();}catch(e){} }, (time+0.02)*1000);
+    }catch(e){}
+}
+
+function setHpBars(){
+    playerHpEl.style.width = Math.max(0, Math.min(100, playerHp)) + '%';
+    botHpEl.style.width = Math.max(0, Math.min(100, botHp)) + '%';
+}
+
+function addEvent(message, type = 'user') {
+    const eventDiv = document.createElement('div');
+    eventDiv.className = 'event-item ' + type;
+    eventDiv.innerHTML = `<strong>${type === 'bot' ? 'Bot' : 'You'}:</strong> ${message}`;
+    eventsContainer.appendChild(eventDiv);
+    eventsContainer.scrollTop = eventsContainer.scrollHeight;
+}
+
+function animateAttack(fromEl, toEl, color='#fff'){
+    const rectFrom = fromEl.getBoundingClientRect();
+    const rectTo = toEl.getBoundingClientRect();
+    const fx = document.createElement('div');
+    fx.style.position = 'absolute';
+    fx.style.left = '10px';
+    fx.style.top = '10px';
+    fx.style.width = '12px';
+    fx.style.height = '12px';
+    fx.style.borderRadius = '50%';
+    fx.style.background = color;
+    fx.style.boxShadow = '0 0 12px ' + color;
+    effectsLayer.appendChild(fx);
+
+    const startX = rectFrom.right - rectFrom.left;
+    const startY = rectFrom.top - rectTo.top + 10;
+    const endX = rectTo.left - rectFrom.left;
+    const endY = rectTo.top - rectFrom.top + 10;
+
+    fx.style.transform = `translate(${startX}px, ${startY}px)`;
+    fx.animate([
+        { transform: `translate(${startX}px, ${startY}px)` },
+        { transform: `translate(${endX}px, ${endY}px)` }
+    ], { duration: 600, easing: 'cubic-bezier(.2,.9,.2,1)' });
+    setTimeout(()=>{
+        const spark = document.createElement('div');
+        spark.style.position = 'absolute';
+        spark.style.width = '40px';
+        spark.style.height = '40px';
+        spark.style.left = `${endX-14}px`;
+        spark.style.top = `${endY-14}px`;
+        spark.style.borderRadius = '50%';
+        spark.style.background = 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.0) 60%)';
+        effectsLayer.appendChild(spark);
+        spark.animate([
+            { opacity:1, transform:'scale(0.2)' },
+            { opacity:0, transform:'scale(1.8)' }
+        ], { duration: 500 });
+        fx.remove();
+        setTimeout(()=>{ spark.remove(); }, 600);
+    }, 620);
+}
+
+submitBtn.addEventListener('click', function() {
+    const solution = solutionInput.value.trim();
+    if (!solution) {
+        alert('Please enter a solution');
+        return;
+    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Evaluating...';
+    addEvent('Submitted solution', 'user');
+    
+    fetch(`/challenges/play/${attemptId}/submit`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ solution: solution })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            addEvent('Solution evaluated!', 'user');
+            if (data.bot_actions) {
+                data.bot_actions.forEach((action, index) => {
+                    setTimeout(() => {
+                        addEvent(action.description, 'bot');
+                        const playerCard = document.getElementById('playerCard');
+                        const botCard = document.getElementById('botCard');
+                        const isAttack = (action.name && action.name.toLowerCase().includes('attack')) ||
+                                         (action.type && action.type === 'attack');
+                        if(isAttack){
+                            animateAttack(botCard, playerCard, '#ffcc00');
+                            playerHp = Math.max(0, playerHp - (action.damage || 10));
+                            setHpBars();
+                            playBeep(220, 0.09);
+                        } else {
+                            playBeep(440, 0.06);
+                        }
+                    }, (index + 1) * 1000);
+                });
+            }
+            setTimeout(() => {
+                playBeep(660, 0.12);
+                window.location.href = data.redirect_url;
+            }, (data.bot_actions ? (data.bot_actions.length + 1) * 1000 : 2000));
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Solution';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to submit solution');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Solution';
+    });
+});
+
+setTimeout(() => {
+    addEvent('Analyzing your approach...', 'bot');
+}, 2000);
+})();
+</script>
+{% endblock extra_js %}

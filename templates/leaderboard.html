@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Leaderboard - Shield & Spear{% endblock %}
+
+{% block content %}
+<style>
+.rank-highlight {
+    font-size: 1.25rem;
+}
+.rank-gold {
+    color: #FFD700;
+}
+.rank-silver {
+    color: #C0C0C0;
+}
+.rank-bronze {
+    color: #CD7F32;
+}
+.rank-other {
+    color: #7c5cdb;
+}
+</style>
+<div class="container" style="padding-top: 2rem;">
+    <h1 class="page-title">Leaderboard</h1>
+    
+    <!-- Category Filter -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <a href="{{ url_for('main.leaderboard', category='all') }}" 
+           class="btn {{ 'btn-primary' if category == 'all' else 'btn-outline' }}" style="margin: 0.25rem;">All</a>
+        <a href="{{ url_for('main.leaderboard', category='red') }}" 
+           class="btn {{ 'btn-primary' if category == 'red' else 'btn-outline' }}" style="margin: 0.25rem;">Red Team</a>
+        <a href="{{ url_for('main.leaderboard', category='blue') }}" 
+           class="btn {{ 'btn-primary' if category == 'blue' else 'btn-outline' }}" style="margin: 0.25rem;">Blue Team</a>
+        <a href="{{ url_for('main.leaderboard', category='coop') }}" 
+           class="btn {{ 'btn-primary' if category == 'coop' else 'btn-outline' }}" style="margin: 0.25rem;">Co-op</a>
+    </div>
+    
+    <div class="gradient-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Score</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in leaderboard[:50] %}
+                <tr {% if current_user.is_authenticated and item.user.id == current_user.id %}style="background: rgba(124, 92, 219, 0.2);"{% endif %}>
+                    <td>
+                        <strong class="rank-highlight {% if loop.index == 1 %}rank-gold{% elif loop.index == 2 %}rank-silver{% elif loop.index == 3 %}rank-bronze{% else %}rank-other{% endif %}">
+                            #{{ loop.index }}
+                        </strong>
+                    </td>
+                    <td>
+                        <strong>{{ item.user.username }}</strong>
+                        {% if item.user.is_admin %}
+                            <span style="color: #7c5cdb; font-size: 0.8rem;"> [ADMIN]</span>
+                        {% endif %}
+                    </td>
+                    <td><strong style="color: #7c5cdb;">{{ item.score }}</strong></td>
+                    <td>
+                        {% if loop.index <= 3 %}
+                            <span style="color: #FFD700;">🏆</span>
+                        {% elif loop.index <= 10 %}
+                            <span style="color: #C0C0C0;">⭐</span>
+                        {% else %}
+                            <span style="color: rgba(255,255,255,0.5);">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: rgba(255,255,255,0.5);">
+                        No scores yet. Be the first to complete a challenge!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

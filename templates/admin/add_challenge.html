@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Edit' if challenge else 'Add' }} Challenge - Admin{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem; max-width: 800px;">
+    <h1 class="page-title">{{ 'Edit' if challenge else 'Add New' }} Challenge</h1>
+    
+    <div class="gradient-card">
+        <form method="POST">
+            <div class="form-group">
+                <label for="title">TITLE</label>
+                <input type="text" id="title" name="title" class="form-control" 
+                       value="{{ challenge.title if challenge else '' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">DESCRIPTION</label>
+                <textarea id="description" name="description" class="form-control" rows="4" required>{{ challenge.description if challenge else '' }}</textarea>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="category">CATEGORY</label>
+                    <select id="category" name="category" class="form-control" required>
+                        <option value="red" {{ 'selected' if challenge and challenge.category == 'red' else '' }}>Red Team</option>
+                        <option value="blue" {{ 'selected' if challenge and challenge.category == 'blue' else '' }}>Blue Team</option>
+                        <option value="coop" {{ 'selected' if challenge and challenge.category == 'coop' else '' }}>Co-op</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="difficulty">DIFFICULTY</label>
+                    <select id="difficulty" name="difficulty" class="form-control" required>
+                        <option value="easy" {{ 'selected' if challenge and challenge.difficulty == 'easy' else '' }}>Easy</option>
+                        <option value="medium" {{ 'selected' if challenge and challenge.difficulty == 'medium' else '' }}>Medium</option>
+                        <option value="hard" {{ 'selected' if challenge and challenge.difficulty == 'hard' else '' }}>Hard</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="challenge_type">CHALLENGE TYPE</label>
+                <select id="challenge_type" name="challenge_type" class="form-control" required>
+                    <option value="sql_injection" {{ 'selected' if challenge and challenge.challenge_type == 'sql_injection' else '' }}>SQL Injection</option>
+                    <option value="xss" {{ 'selected' if challenge and challenge.challenge_type == 'xss' else '' }}>XSS</option>
+                    <option value="dos" {{ 'selected' if challenge and challenge.challenge_type == 'dos' else '' }}>DoS</option>
+                    <option value="password_strength" {{ 'selected' if challenge and challenge.challenge_type == 'password_strength' else '' }}>Password Strength</option>
+                    <option value="server_config" {{ 'selected' if challenge and challenge.challenge_type == 'server_config' else '' }}>Server Configuration</option>
+                </select>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label for="max_score">MAX SCORE</label>
+                    <input type="number" id="max_score" name="max_score" class="form-control" 
+                           value="{{ challenge.max_score if challenge else '100' }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="time_limit">TIME LIMIT (seconds)</label>
+                    <input type="number" id="time_limit" name="time_limit" class="form-control" 
+                           value="{{ challenge.time_limit if challenge else '300' }}" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="solution_explanation">SOLUTION EXPLANATION</label>
+                <textarea id="solution_explanation" name="solution_explanation" class="form-control" rows="4">{{ challenge.solution_explanation if challenge else '' }}</textarea>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem;">
+                <a href="{{ url_for('admin.manage_challenges') }}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary">{{ 'Update' if challenge else 'Create' }} Challenge</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

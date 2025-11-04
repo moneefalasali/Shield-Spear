@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Choose A Category - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 4rem;">
+    <h1 class="page-title">Choose A Category</h1>
+    
+    <div class="category-cards">
+        <!-- Blue Team Card -->
+        <a href="{{ url_for('challenges.blue_challenges') }}" class="category-card">
+            <h3>Blue Team</h3>
+            <p>Try A Defensive Role</p>
+        </a>
+        
+        <!-- Red Team Card -->
+        <a href="{{ url_for('challenges.red_challenges') }}" class="category-card">
+            <h3>Red Team</h3>
+            <p>Try An Attacker Role</p>
+        </a>
+        
+        <!-- Co-op Card -->
+        <a href="{{ url_for('challenges.coop_challenges') }}" class="category-card">
+            <h3>CO-OP</h3>
+            <p>Try Attack Or Defend Against A Friend</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

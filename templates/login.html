@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; margin-top: 5rem;">
+    <div class="gradient-card">
+        <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: white;">Login</h2>
+        <p style="color: rgba(255,255,255,0.7); margin-bottom: 2rem;">Sign in to continue.</p>
+        
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <div class="form-group">
+                <label for="email">USERNAME OR EMAIL</label>
+                <!-- Use text input so usernames (non-email) are accepted too -->
+                <input type="text" id="email" name="email" class="form-control" placeholder="Username or email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">PASSWORD</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="••••••" required>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" id="remember" name="remember" style="width: auto;">
+                <label for="remember" style="margin: 0;">Remember me</label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Login</button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 1.5rem; color: rgba(255,255,255,0.7);">
+            Don't have an account? <a href="{{ url_for('auth.signup') }}" style="color: #7c5cdb;">Sign up</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Logs{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+    <h1 class="page-title">Admin Activity Logs</h1>
+    
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline">Back to Dashboard</a>
+    </div>
+    
+    <div class="gradient-card">
+        {% if logs %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Admin</th>
+                        <th>Target Type</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.action }}</td>
+                        <td>{{ log.admin.username }}</td>
+                        <td>{{ log.target_type or '-' }}</td>
+                        <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">No logs found</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Result - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 2rem;">
+    <div class="gradient-card">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            {% if attempt.is_correct %}
+                <h1 style="color: #4CAF50; font-size: 3rem;">✓ Success!</h1>
+            {% else %}
+                <h1 style="color: #ff6b6b; font-size: 3rem;">✗ Not Quite</h1>
+            {% endif %}
+        </div>
+        
+        <h2 style="margin-bottom: 1rem;">{{ challenge.title }}</h2>
+        
+        <!-- Score Display -->
+        <div style="text-align: center; padding: 2rem; background: rgba(255,255,255,0.05); border-radius: 12px; margin: 2rem 0;">
+            <h3 style="color: #7c5cdb; font-size: 3rem; margin-bottom: 0.5rem;">{{ attempt.score }}</h3>
+            <p style="color: rgba(255,255,255,0.7);">Points Earned</p>
+        </div>
+        
+        <!-- Feedback -->
+        <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
+            <h4 style="margin-bottom: 1rem;">Feedback:</h4>
+            <pre style="white-space: pre-wrap; font-family: inherit; color: rgba(255,255,255,0.9);">{{ attempt.feedback }}</pre>
+        </div>
+        
+        <!-- Bot Actions Log -->
+        {% if attempt.bot_actions %}
+        <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
+            <h4 style="margin-bottom: 1rem;">Bot Actions:</h4>
+            {% for action in attempt.bot_actions %}
+                <div class="event-item bot" style="margin-bottom: 0.75rem;">
+                    <strong>Bot:</strong> {{ action.description }}
+                    {% if action.success %}
+                        <span style="color: #4CAF50;"> ✓</span>
+                    {% else %}
+                        <span style="color: #ff6b6b;"> ✗</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Corrections/Learning -->
+        {% if attempt.corrections %}
+        <div style="background: rgba(124, 92, 219, 0.1); padding: 1.5rem; border-radius: 8px; border-left: 4px solid #7c5cdb; margin: 2rem 0;">
+            <h4 style="margin-bottom: 1rem;">{{ attempt.corrections.title }}</h4>
+            <ul style="padding-left: 1.5rem; color: rgba(255,255,255,0.9);">
+                {% for example in attempt.corrections.examples %}
+                    <li style="margin-bottom: 0.5rem;">{{ example }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <!-- Time Taken -->
+        <div style="text-align: center; margin-top: 2rem; color: rgba(255,255,255,0.7);">
+            <p>Time Taken: <strong>{{ attempt.time_taken }}</strong> seconds</p>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem;">
+            <a href="{{ url_for('main.trials') }}" class="btn btn-outline" style="text-align: center;">Back to Trials</a>
+            <a href="{{ url_for('main.leaderboard') }}" class="btn btn-primary" style="text-align: center;">View Leaderboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

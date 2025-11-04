@@ -1,0 +1,73 @@
+/* Trials Page Styles */
+
+.trials-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    min-height: calc(100vh - 200px);
+}
+
+.trials-container h1 {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.trials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.trial-card {
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    text-align: center;
+    transition: all var(--transition-base);
+    cursor: pointer;
+}
+
+.trial-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.trial-card.blue-team {
+    border-color: #0284c7;
+}
+
+.trial-card.blue-team:hover {
+    box-shadow: 0 20px 40px rgba(2, 132, 199, 0.3);
+}
+
+.trial-card.red-team {
+    border-color: #dc2626;
+}
+
+.trial-card.red-team:hover {
+    box-shadow: 0 20px 40px rgba(220, 38, 38, 0.3);
+}
+
+.trial-card.coop-team {
+    border-color: #7c3aed;
+}
+
+.trial-card.coop-team:hover {
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.3);
+}
+
+.trial-card h2 {
+    margin-bottom: var(--spacing-md);
+}
+
+.trial-card p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+    .trials-grid {
+        grid-template-columns: 1fr;
+    }
+}

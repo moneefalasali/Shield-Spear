@@ -1,0 +1,148 @@
+/* Leaderboard Page Styles */
+
+.leaderboard-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    min-height: calc(100vh - 200px);
+}
+
+.leaderboard-header {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.leaderboard-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.leaderboard-header p {
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+}
+
+.leaderboard-wrapper {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard-table thead {
+    background-color: var(--bg-tertiary);
+}
+
+.leaderboard-table th {
+    padding: var(--spacing-md);
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.leaderboard-table td {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rank-col { width: 80px; }
+.name-col { flex: 1; }
+.score-col { width: 120px; text-align: right; }
+.badge-col { width: 150px; }
+
+.rank-row {
+    transition: background-color var(--transition-fast);
+}
+
+.rank-row:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.rank-row.top-1 {
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.1) 0%, transparent 100%);
+}
+
+.rank-row.top-2 {
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.1) 0%, transparent 100%);
+}
+
+.rank-row.top-3 {
+    background: linear-gradient(90deg, rgba(205, 127, 50, 0.1) 0%, transparent 100%);
+}
+
+.rank-cell {
+    text-align: center;
+    font-weight: 600;
+}
+
+.rank-badge {
+    font-size: 1.5rem;
+}
+
+.rank-number {
+    color: var(--text-secondary);
+}
+
+.name-cell {
+    font-weight: 500;
+}
+
+.score-cell {
+    color: var(--primary);
+    font-weight: 600;
+    text-align: right;
+}
+
+.badge-cell {
+    text-align: center;
+}
+
+.badge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-master {
+    background-color: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+}
+
+.badge-expert {
+    background-color: rgba(14, 165, 233, 0.2);
+    color: #0ea5e9;
+}
+
+.badge-beginner {
+    background-color: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .leaderboard-table {
+        font-size: 0.9rem;
+    }
+
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: var(--spacing-sm);
+    }
+
+    .rank-col { width: 60px; }
+    .score-col { width: 100px; }
+    .badge-col { width: 120px; }
+}

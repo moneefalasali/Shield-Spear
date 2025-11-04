@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Shield & Spear{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <div class="hero-card gradient-card">
+        <div class="hero-grid">
+            <div class="hero-left">
+                <span class="tag">#TrainSecure</span>
+                <h1 class="hero-title">Defend. Attack. Learn. Have Fun</h1>
+                <p class="hero-sub">Join live blue-team vs red-team challenges, train skills, test strategies, or challenge a friend. No complex setup — just jump in and play.</p>
+                <div style="margin-top:1.25rem;">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-hero">Check trials</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-hero">Get Started</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="hero-right">
+                <!-- Hero image is applied via data-bg attribute to avoid inline CSS with Jinja -->
+                <div class="hero-image" aria-hidden="true" data-bg="{{ url_for('static', filename='images/hero.jpg') }}"></div>
+                <!-- decorative -->
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// Apply background images from data-bg attributes at runtime to avoid Jinja inside CSS
+(function(){
+    try{
+        document.querySelectorAll('.hero-image[data-bg]').forEach(function(el){
+            var url = el.getAttribute('data-bg');
+            if(url){
+                el.style.backgroundImage = 'url("' + url + '")';
+                el.style.backgroundSize = 'cover';
+                el.style.backgroundPosition = 'center';
+                el.style.borderRadius = getComputedStyle(el).borderRadius || '28px';
+                el.style.boxShadow = '0 20px 60px rgba(2,6,23,0.6)';
+            }
+        });
+    }catch(e){
+        console && console.error && console.error('hero-bg:', e);
+    }
+})();
+</script>
+{% endblock %}

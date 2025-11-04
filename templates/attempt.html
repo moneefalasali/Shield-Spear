@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ challenge.title }} - Cybersecurity Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/challenges.css') }}">
+    <style>
+        .challenge-page {
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        
+        .challenge-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 10px;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .challenge-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2em;
+        }
+        
+        .challenge-meta {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .meta-item {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 5px;
+        }
+        
+        .challenge-content {
+            background: #1e1e2e;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .description {
+            line-height: 1.8;
+            white-space: pre-wrap;
+            color: #e0e0e0;
+            font-size: 1.1em;
+        }
+        
+        .solution-area {
+            background: #2a2a3e;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        
+        .solution-area h2 {
+            margin-top: 0;
+            color: #fff;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #e0e0e0;
+            font-weight: bold;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 15px;
+            background: #1e1e2e;
+            border: 2px solid #3a3a4e;
+            border-radius: 5px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            min-height: 150px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #3a3a4e;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4a4a5e;
+        }
+        
+        .result-box {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .result-box.success {
+            background: rgba(76, 175, 80, 0.1);
+            border: 2px solid #4CAF50;
+            color: #4CAF50;
+        }
+        
+        .result-box.error {
+            background: rgba(244, 67, 54, 0.1);
+            border: 2px solid #f44336;
+            color: #f44336;
+        }
+        
+        .result-box h3 {
+            margin-top: 0;
+        }
+        
+        .feedback {
+            white-space: pre-wrap;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+        
+        .errors {
+            margin-top: 15px;
+        }
+        
+        .errors li {
+            margin-bottom: 8px;
+        }
+        
+        .solution-revealed {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            color: #e0e0e0;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid #3a3a4e;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .badge-easy {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .badge-medium {
+            background: #FF9800;
+            color: white;
+        }
+        
+        .badge-hard {
+            background: #f44336;
+            color: white;
+        }
+        
+        .badge-red {
+            background: #e53935;
+            color: white;
+        }
+        
+        .badge-blue {
+            background: #1976D2;
+            color: white;
+        }
+        
+        .badge-coop {
+            background: #7B1FA2;
+            color: white;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="{{ url_for('main.index') }}" class="navbar-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"></path>
+                </svg>
+                <span>Cybersecurity Simulator</span>
+            </a>
+            <ul class="navbar-menu">
+                <li><a href="{{ url_for('main.index') }}" class="nav-link">Home</a></li>
+                <li><a href="{{ url_for('main.trials') }}" class="nav-link">Challenges</a></li>
+                <li><a href="{{ url_for('main.profile') }}" class="nav-link">Profile</a></li>
+                <li><a href="{{ url_for('admin.leaderboard') }}" class="nav-link">Leaderboard</a></li>
+                <li><a href="{{ url_for('auth.logout') }}" class="nav-link btn btn-outline">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="challenge-page">
+        <div class="challenge-header">
+            <h1>{{ challenge.title }}</h1>
+            <div class="challenge-meta">
+                <div class="meta-item">
+                    <strong>Category:</strong> 
+                    <span class="badge badge-{{ challenge.category }}">{{ challenge.category.upper() }}</span>
+                </div>
+                <div class="meta-item">
+                    <strong>Difficulty:</strong> 
+                    <span class="badge badge-{{ challenge.difficulty }}">{{ challenge.difficulty.upper() }}</span>
+                </div>
+                <div class="meta-item">
+                    <strong>Points:</strong> {{ challenge.max_score }}
+                </div>
+                <div class="meta-item">
+                    <strong>Time:</strong> {{ challenge.time_limit // 60 }} min
+                </div>
+            </div>
+        </div>
+
+        <div class="challenge-content">
+        <h2>📋 Challenge Description</h2>
+            <div class="description">{{ challenge.description }}</div>
+        </div>
+
+        <div class="solution-area">
+            <h2>💡 Your Solution</h2>
+            <form id="solution-form">
+                <div class="form-group">
+                    <label for="solution">Enter solution / code / explanation:</label>
+                    <textarea 
+                        id="solution" 
+                        name="solution" 
+                        class="form-control" 
+                        placeholder="Write your solution here...&#10;You may include code, commands, or a detailed explanation depending on the challenge type"
+                        required></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="submit-btn">
+                        Submit Solution
+                    </button>
+                    <a href="{{ url_for('main.trials') }}" class="btn btn-secondary">
+                        Back to Trials
+                    </a>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Evaluating...</p>
+                </div>
+            </form>
+
+            <div id="result-box" class="result-box">
+                <h3 id="result-title"></h3>
+                <div class="feedback" id="result-feedback"></div>
+                <div id="result-score"></div>
+                <div id="result-errors" class="errors"></div>
+                <div id="action-log" style="margin-top:16px;"></div>
+                <div id="result-solution" class="solution-revealed"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Cybersecurity Simulator. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+    (function(){
+        const attemptId = "{{ attempt.id }}";
+        const form = document.getElementById('solution-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const loading = document.getElementById('loading');
+        const resultBox = document.getElementById('result-box');
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const solution = document.getElementById('solution').value;
+            
+            // Show loading
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            resultBox.style.display = 'none';
+            
+            try {
+                const response = await fetch(`/challenges/attempt/${attemptId}/submit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ solution: solution })
+                });
+                
+                const result = await response.json();
+                
+                // Hide loading
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                // Show result
+                resultBox.style.display = 'block';
+                resultBox.className = 'result-box ' + (result.success ? 'success' : 'error');
+                
+                document.getElementById('result-title').textContent = 
+                    result.success ? '✅ Success! Challenge completed' : '❌ Needs Improvement';
+                
+                document.getElementById('result-feedback').textContent = result.feedback;
+                
+                document.getElementById('result-score').innerHTML = 
+                    `<strong>Points Earned:</strong> ${result.score} / {{ challenge.max_score }}`;
+                
+                // Show errors if any
+                const errorsDiv = document.getElementById('result-errors');
+                if (result.errors && result.errors.length > 0) {
+                    errorsDiv.innerHTML = '<h4>⚠️ Improvement Notes:</h4><ul>' +
+                        result.errors.map(err => `<li>${err}</li>`).join('') +
+                        '</ul>';
+                } else {
+                    errorsDiv.innerHTML = '';
+                }
+                
+                // Show solution if successful
+                const solutionDiv = document.getElementById('result-solution');
+                if (result.success && result.solution) {
+                    solutionDiv.innerHTML = `
+                        <h4>📚 Full Solution:</h4>
+                        <pre style="white-space: pre-wrap;">${result.solution}</pre>
+                    `;
+                } else {
+                    solutionDiv.innerHTML = '';
+                }
+                // Render bot actions (visual timeline)
+                const actions = result.bot_actions || [];
+                renderBotActions(actions);
+                
+                // Scroll to result
+                resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                resultBox.style.display = 'block';
+                resultBox.className = 'result-box error';
+                document.getElementById('result-title').textContent = '❌ Error';
+                document.getElementById('result-feedback').textContent = 
+                    'There was an error submitting your solution. Please try again.';
+            }
+        });
+
+        function renderBotActions(actions){
+            const container = document.getElementById('action-log');
+            container.innerHTML = '';
+            if(!actions || actions.length === 0) return;
+
+            const title = document.createElement('h4');
+            title.textContent = '🛰️ Opponent Interaction (Action Log)';
+            title.style.color = '#ddd';
+            container.appendChild(title);
+
+            const list = document.createElement('div');
+            list.style.display = 'flex';
+            list.style.flexDirection = 'column';
+            list.style.gap = '8px';
+            container.appendChild(list);
+
+            actions.forEach((act, idx) => {
+                const row = document.createElement('div');
+                row.className = 'meta-item';
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-between';
+                row.style.alignItems = 'center';
+                row.style.padding = '10px';
+
+                const left = document.createElement('div');
+                left.style.color = '#fff';
+                left.innerHTML = `<strong>${act.name || act.action || 'action'}</strong><div style="font-size:12px;color:#ccc">${act.description || act.desc || ''}</div>`;
+
+                const right = document.createElement('div');
+                right.style.color = act.success ? '#4CAF50' : '#f44336';
+                right.textContent = act.success ? 'Success' : 'Failed';
+
+                row.appendChild(left);
+                row.appendChild(right);
+                list.appendChild(row);
+
+                // simple pulse animation to draw attention
+                setTimeout(()=>{ row.animate([{ transform: 'scale(1)', background: 'rgba(255,255,255,0.02)' }, { transform: 'scale(1.02)', background: 'rgba(124,92,219,0.06)' }, { transform: 'scale(1)', background: 'rgba(255,255,255,0.02)' }], { duration: 700, easing: 'ease-out' }); }, idx * 250);
+            });
+        }
+    })();
+    </script>
+</body>
+</html>
