@@ -8,5 +8,5 @@ from app import create_app, socketio
 # Create the Flask app using the factory
 app = create_app()
 
-# Expose the Socket.IO WSGI application for Gunicorn
-application = socketio.WSGIApp(app)
+# Expose the app itself for Gunicorn
+application = app
