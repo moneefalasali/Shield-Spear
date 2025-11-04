@@ -6,7 +6,7 @@ from app.models import db, User
 import os
 
 login_manager = LoginManager()
-socketio = SocketIO()
+socketio = SocketIO(async_mode='gevent')
 
 def create_app(config_name='development'):
     """Application factory function"""

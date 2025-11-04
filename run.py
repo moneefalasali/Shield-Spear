@@ -5,12 +5,8 @@ Main Application Entry Point
 """
 
 # eventlet requires monkey patching to be applied before other imports
-try:
-    import eventlet
-    eventlet.monkey_patch()
-except Exception:
-    # If eventlet is not available, continue; deployment environments should install it
-    pass
+import gevent.monkey
+gevent.monkey.patch_all()
 
 import os
 import sys
