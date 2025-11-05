@@ -8,7 +8,7 @@ from app import create_app, socketio
 from app.models import db, User, Challenge
 from app.init_challenges import get_challenges
 
-# إنشاء تطبيق Flask
+# إنشاء التطبيق
 app = create_app()
 
 def init_database():
@@ -42,8 +42,3 @@ init_database()
 # نقطة الدخول الرسمية لـ Gunicorn
 # لا تستخدم socketio.WSGIApp بعد تحديث Flask-SocketIO
 application = app
-
-# لتشغيل محلي بدون Gunicorn
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="0.0.0.0", port=port)
