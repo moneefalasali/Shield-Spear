@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
 """
 Shield & Spear - Cybersecurity Training Platform
-Database Initialization Script for Hosting
+Production Entrypoint for Render
 """
 
 import os
-from app import create_app
+from app import create_app, socketio
 from app.models import db, User, Challenge
 from app.init_challenges import get_challenges
 
-# Create Flask app
+# إنشاء التطبيق
 app = create_app()
 
 def init_database():
-    """Initialize database with admin user and pre-built challenges"""
+    """Initialize database with admin user and pre-built challenges (only if empty)"""
     with app.app_context():
-        # Create all tables if they don't exist
         db.create_all()
-        
-        # Create admin user if not exists
-        admin = User.query.filter_by(username='admin').first()
-        if not admin:
+
+        # تأكد أن التهيئة تتم مرة واحدة فقط
+        if User.query.count() == 0:
             admin = User(
                 username='admin',
                 email='admin@shieldspear.com',
@@ -30,24 +28,22 @@ def init_database():
             admin.set_password('admin123')
             db.session.add(admin)
             print("✓ Created admin user: admin / admin123")
-        else:
-            print("✓ Admin user already exists")
-        
-        # Add pre-built challenges
-        challenges_data = get_challenges()
-        added_count = 0
-        for challenge_data in challenges_data:
-            existing = Challenge.query.filter_by(title=challenge_data['title']).first()
-            if not existing:
-                challenge = Challenge(**challenge_data)
-                db.session.add(challenge)
-                added_count += 1
-        
-        db.session.commit()
-        print(f"✓ Database initialized with {added_count} new challenges")
-        print(f"✓ Total challenges in database: {Challenge.query.count()}")
 
-if __name__ == '__main__':
-    print("🔹 Initializing database for hosting...")
-    init_database()
-    print("✅ Database initialization completed. Ready for deployment.")
+            # أضف التحديات
+            challenges_data = get_challenges()
+            for c in challenges_data:
+                challenge = Challenge(**c)
+                db.session.add(challenge)
+            db.session.commit()
+            print(f"✓ Added {len(challenges_data)} challenges")
+        else:
+            print("✓ Database already initialized — skipping seeding")
+
+# تهيئة قاعدة البيانات مرة واحدة
+init_database()
+
+# تشغيل التطبيق على Render
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    print(f"🚀 Starting Shield & Spear on port {port} (Render Production Mode)")
+    socketio.run(app, host="0.0.0.0", port=port)
