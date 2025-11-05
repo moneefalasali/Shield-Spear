@@ -1,13 +1,13 @@
-"""WSGI entrypoint for Gunicorn with Gevent WebSocket."""
+"""WSGI entrypoint for Gunicorn with Gevent WebSocket and auto DB init."""
+
 import gevent.monkey
 gevent.monkey.patch_all()
 
-import os
 from app import create_app, socketio
 from app.models import db, User, Challenge
 from app.init_challenges import get_challenges
 
-# إنشاء التطبيق
+# إنشاء تطبيق Flask
 app = create_app()
 
 def init_database():
@@ -15,7 +15,7 @@ def init_database():
     with app.app_context():
         db.create_all()
 
-        # إذا لم يكن هناك مستخدمين، أضف المستخدم والتحديات
+        # إنشاء مستخدم admin عند أول تشغيل
         if User.query.count() == 0:
             admin = User(
                 username='admin',
@@ -25,20 +25,19 @@ def init_database():
             )
             admin.set_password('admin123')
             db.session.add(admin)
-            print("✓ Created admin user: admin / admin123")
 
             # إضافة التحديات التجريبية
             challenges = get_challenges()
             for c in challenges:
                 db.session.add(Challenge(**c))
-            db.session.commit()
-            print(f"✓ Added {len(challenges)} demo challenges")
 
+            db.session.commit()
+            print(f"✓ Database initialized with admin user and {len(challenges)} demo challenges")
         else:
-            print("✓ Database already initialized, skipping seeding")
+            print("✓ Database already initialized — skipping")
 
 # تهيئة قاعدة البيانات
 init_database()
 
-# التطبيق الذي سيخدمه Gunicorn
-application = socketio.WSGIApp(app)
+# هذا هو التطبيق الذي سيخدمه Gunicorn
+application = app
