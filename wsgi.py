@@ -1,5 +1,6 @@
 """WSGI entrypoint for Gunicorn with Gevent WebSocket and auto DB init."""
 
+import os
 import gevent.monkey
 gevent.monkey.patch_all()
 
@@ -15,7 +16,6 @@ def init_database():
     with app.app_context():
         db.create_all()
 
-        # إنشاء مستخدم admin عند أول تشغيل
         if User.query.count() == 0:
             admin = User(
                 username='admin',
@@ -36,8 +36,14 @@ def init_database():
         else:
             print("✓ Database already initialized — skipping")
 
-# تهيئة قاعدة البيانات
+# تهيئة قاعدة البيانات عند التشغيل الأول
 init_database()
 
-# هذا هو التطبيق الذي سيخدمه Gunicorn
+# نقطة الدخول الرسمية لـ Gunicorn
+# لا تستخدم socketio.WSGIApp بعد تحديث Flask-SocketIO
 application = app
+
+# لتشغيل محلي بدون Gunicorn
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host="0.0.0.0", port=port)
