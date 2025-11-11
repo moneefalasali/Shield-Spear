@@ -437,7 +437,12 @@ def play_coop(session_id):
     
     # Check if user is participant
     participants = coop_session.participants or []
-    user_participant = next((p for p in participants if p['user_id'] == current_user.id), None)
+    def _extract_user_id(p):
+        if isinstance(p, dict):
+            return p.get('user_id')
+        return p
+    
+    user_participant = next((p for p in participants if _extract_user_id(p) == current_user.id), None)
     
     # Allow access if the session is waiting or in progress, regardless of participation status.
     # The client-side code will handle the 'join' logic if the user is not a participant.
