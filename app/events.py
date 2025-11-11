@@ -271,8 +271,21 @@ def register_socketio_events(socketio):
         """Start a cooperative session"""
         session_code = data.get('session_code')
         coop_session = CoopSession.query.filter_by(session_code=session_code).first()
-        if not coop_session or coop_session.creator_id != current_user.id:
-            emit('error', {'message': 'You do not have permission to start this session'})
+        # Allow any participant to start the session
+        if not coop_session:
+            emit('error', {'message': 'Session not found'})
+            return
+        
+        # Check if the current user is a participant (optional, but good practice)
+        is_participant = False
+        for p in (coop_session.participants or []):
+            uid = p.get('user_id') if isinstance(p, dict) else p
+            if uid == current_user.id:
+                is_participant = True
+                break
+        
+        if not is_participant:
+            emit('error', {'message': 'You must be a participant to start this session'})
             return
         # delegate to internal starter
         _start_session(coop_session)
