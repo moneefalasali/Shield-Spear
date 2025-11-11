@@ -435,24 +435,15 @@ def play_coop(session_id):
         flash('Session not found', 'error')
         return redirect(url_for('main.trials'))
     
-    # Check if user is participant
-    participants = coop_session.participants or []
-    def _extract_user_id(p):
-        if isinstance(p, dict):
-            return p.get('user_id')
-        return p
-    
-    user_participant = next((p for p in participants if str(_extract_user_id(p)) == str(current_user.id)), None)
-    
-    # Allow access if the session is waiting or in progress, regardless of participation status.
-    # The client-side code will handle the 'join' logic if the user is not a participant.
-    if not user_participant and coop_session.status not in ('waiting', 'in_progress'):
-        flash('You are not a participant in this session', 'error')
-        return redirect(url_for('main.trials'))
-    
-    # If the session is 'waiting' or 'in_progress', we allow access to the page.
-    # The client-side SocketIO logic (handle_join_coop_session) will add the user as a participant.
-    # We only restrict access if the session is completed or cancelled, and the user is not a participant.
+    # Allow access to the session page regardless of participation status.
+    # The SocketIO logic in events.py will handle adding the user as a participant.
+    # The original check was:
+    # participants = coop_session.participants or []
+    # user_participant = next((p for p in participants if p['user_id'] == current_user.id), None)
+    # if not user_participant:
+    #     flash('You are not a participant in this session', 'error')
+    #     return redirect(url_for('main.trials'))
+    pass
     
     challenge = coop_session.challenge
     is_creator = (coop_session.creator_id == current_user.id)
