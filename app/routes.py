@@ -392,39 +392,47 @@ def create_coop_session():
 @login_required
 def join_coop_session(session_code):
     """Join an existing co-op session"""
-    coop_session = CoopSession.query.filter_by(session_code=session_code).first()
-    
-    if not coop_session:
-        if request.method == 'POST':
-            return jsonify({'error': 'Session not found'}), 404
-        flash('Session not found', 'error')
-        return redirect(url_for('main.trials'))
-    
-    if coop_session.status == 'completed':
-        flash('This session has already ended', 'error')
-        return redirect(url_for('main.trials'))
-    
-    # Check if user already in session
-    participants = coop_session.participants or []
-    user_in_session = any(p['user_id'] == current_user.id for p in participants)
-    
-    if not user_in_session:
-        if len(participants) >= 2:
-            flash('Session is full', 'error')
+    try:
+        coop_session = CoopSession.query.filter_by(session_code=session_code).first()
+        
+        if not coop_session:
+            if request.method == 'POST':
+                return jsonify({'error': 'Session not found'}), 404
+            flash('Session not found', 'error')
             return redirect(url_for('main.trials'))
         
-        # Assign opposite team
-        opponent_team = 'blue' if coop_session.creator_team == 'red' else 'red'
-        participants.append({'user_id': current_user.id, 'team': opponent_team})
-        coop_session.participants = participants
-        coop_session.status = 'in_progress'
-        coop_session.started_at = datetime.utcnow()
-        db.session.commit()
-    
-    if request.method == 'POST':
-        return jsonify({'success': True, 'redirect_url': url_for('challenges.play_coop', session_id=coop_session.id)})
-    
-    return redirect(url_for('challenges.play_coop', session_id=coop_session.id))
+        if coop_session.status == 'completed':
+            flash('This session has already ended', 'error')
+            return redirect(url_for('main.trials'))
+        
+        # Check if user already in session
+        participants = coop_session.participants or []
+        user_in_session = any(p['user_id'] == current_user.id for p in participants)
+        
+        if not user_in_session:
+            if len(participants) >= 2:
+                flash('Session is full', 'error')
+                return redirect(url_for('main.trials'))
+            
+            # Assign opposite team
+            opponent_team = 'blue' if coop_session.creator_team == 'red' else 'red'
+            participants.append({'user_id': current_user.id, 'team': opponent_team})
+            coop_session.participants = participants
+            coop_session.status = 'in_progress'
+            coop_session.started_at = datetime.utcnow()
+            db.session.commit()
+        
+        if request.method == 'POST':
+            return jsonify({'success': True, 'redirect_url': url_for('challenges.play_coop', session_id=coop_session.id)})
+        
+        return redirect(url_for('challenges.play_coop', session_id=coop_session.id))
+    except Exception as e:
+        tb = traceback.format_exc()
+        current_app.logger.error('Error in join_coop_session:\n%s', tb)
+        if request.method == 'POST':
+            return jsonify({'success': False, 'error': 'Internal server error', 'details': str(e)}), 500
+        flash('Internal server error occurred while joining session.', 'error')
+        return redirect(url_for('main.trials'))
 
 @challenges_bp.route('/coop/play/<session_id>')
 @login_required
