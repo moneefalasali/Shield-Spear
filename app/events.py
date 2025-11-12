@@ -76,12 +76,14 @@ def register_socketio_events(socketio):
         if not coop_session:
             return
 
-        coop_session.status = 'in_progress'
-        coop_session.started_at = datetime.utcnow()
         try:
+            coop_session.status = 'in_progress'
+            coop_session.started_at = datetime.utcnow()
             db.session.commit()
-        except Exception:
+        except Exception as e:
             db.session.rollback()
+            print(f"Error starting session: {e}")
+            return
 
         # Create a ChallengeAttempt for each participant and map them
         attempts_map = {}
@@ -104,9 +106,11 @@ def register_socketio_events(socketio):
                 try:
                     user = __import__('app.models', fromlist=['User']).User.query.get(uid)
                     participants_user_map[str(uid)] = user.username if user else str(uid)
-                except Exception:
+                except Exception as e:
+                    print(f"Error getting username for {uid}: {e}")
                     participants_user_map[str(uid)] = str(uid)
-            except Exception:
+            except Exception as e:
+                print(f"Error creating attempt for {uid}: {e}")
                 continue
 
         try:
@@ -271,21 +275,8 @@ def register_socketio_events(socketio):
         """Start a cooperative session"""
         session_code = data.get('session_code')
         coop_session = CoopSession.query.filter_by(session_code=session_code).first()
-        # Allow any participant to start the session
-        if not coop_session:
-            emit('error', {'message': 'Session not found'})
-            return
-        
-        # Check if the current user is a participant (optional, but good practice)
-        is_participant = False
-        for p in (coop_session.participants or []):
-            uid = p.get('user_id') if isinstance(p, dict) else p
-            if uid == current_user.id:
-                is_participant = True
-                break
-        
-        if not is_participant:
-            emit('error', {'message': 'You must be a participant to start this session'})
+        if not coop_session or coop_session.creator_id != current_user.id:
+            emit('error', {'message': 'You do not have permission to start this session'})
             return
         # delegate to internal starter
         _start_session(coop_session)
