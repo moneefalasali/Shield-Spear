@@ -1,4 +1,3 @@
-
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models import db, User, Challenge, ChallengeAttempt, CoopSession, AdminLog
@@ -280,29 +279,36 @@ def submit_solution(attempt_id):
     )
     
     # Calculate time taken
-    time_taken = (datetime.utcnow() - attempt.started_at).total_seconds()
+    time_taken = int((datetime.utcnow() - attempt.started_at).total_seconds())
     
-    # Calculate score
-    score = challenge_engine.calculate_score(
-        result['success'],
-        time_taken,
-        challenge.difficulty
-    )
+    # Get bot actions (simulate bot playing against user)
+    bot_role = 'defender' if role == 'attacker' else 'attacker'
+    bot = BotAI(difficulty=challenge.difficulty, role=bot_role)
+    
+    bot_actions = []
+    for i in range(3):  # Bot makes 3-4 actions
+        bot_action = bot.get_next_action(challenge.challenge_type, {'bot_step': i})
+        bot_actions.append(bot_action)
     
     # Update attempt
+    attempt.user_input = user_input
+    attempt.is_correct = result['success']
+    attempt.score = result['score']
+    attempt.feedback = result['feedback']
+    attempt.mistakes = result.get('details', {})
+    attempt.corrections = result.get('corrections', {})
+    attempt.bot_actions = bot_actions
+    attempt.time_taken = time_taken
     attempt.is_completed = True
     attempt.completed_at = datetime.utcnow()
-    attempt.score = score
-    attempt.is_successful = result['success']
     
     db.session.commit()
     
-    # Return result to user
     return jsonify({
         'success': True,
         'result': result,
-        'score': score,
-        'redirect_url': url_for('challenges.result', attempt_id=attempt.id)
+        'bot_actions': bot_actions,
+        'redirect_url': url_for('challenges.result', attempt_id=attempt_id)
     })
 
 @challenges_bp.route('/result/<attempt_id>')
@@ -314,97 +320,125 @@ def result(attempt_id):
         flash('Invalid challenge attempt', 'error')
         return redirect(url_for('main.trials'))
     
-    return render_template('result.html', attempt=attempt)
-
+    challenge = attempt.challenge
+    return render_template('result.html', attempt=attempt, challenge=challenge)
 
 # ==================== CO-OP ROUTES ====================
 
-@challenges_bp.route('/coop/create', methods=['POST'])
+@api_bp.route('/coop/create', methods=['POST'])
 @login_required
 def create_coop_session():
     """Create a new co-op session"""
-    data = request.get_json() or {}
-    challenge_id = data.get('challenge_id')
-    
-    if not challenge_id:
-        return jsonify({'error': 'Challenge ID is required'}), 400
-    
-    challenge = Challenge.query.get(challenge_id)
-    if not challenge or challenge.category != 'coop':
-        return jsonify({'error': 'Invalid co-op challenge'}), 404
-    
-    # Create a unique session ID
-    session_id = str(uuid.uuid4())[:8]
-    
-    # Create the session
-    coop_session = CoopSession(
-        session_id=session_id,
-        challenge_id=challenge_id,
-        creator_id=current_user.id,
-        participants=[{'user_id': current_user.id, 'username': current_user.username, 'team': 'blue'}] # Creator starts in blue team
-    )
-    
-    db.session.add(coop_session)
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'session_id': session_id,
-        'redirect_url': url_for('challenges.play_coop', session_id=session_id)
-    })
+    try:
+        data = request.get_json() or {}
+        creator_team = data.get('team', 'red')  # red or blue
+        challenge_id = data.get('challenge_id')
 
-@challenges_bp.route('/coop/join', methods=['POST'])
-@login_required
-def join_coop_session():
-    """Join an existing co-op session"""
-    data = request.get_json() or {}
-    session_id = data.get('session_id', '').strip()
-    
-    if not session_id:
-        return jsonify({'error': 'Session ID is required'}), 400
-    
-    coop_session = CoopSession.query.filter_by(session_id=session_id).first()
-    if not coop_session:
-        return jsonify({'error': 'Session not found'}), 404
-    
-    # Check if user is already in the session
-    participants = coop_session.participants or []
-    if any(p['user_id'] == current_user.id for p in participants):
-        # User is already in, just redirect
+        # If a challenge_id was provided, ensure it exists; otherwise pick a default coop challenge
+        if challenge_id:
+            challenge = Challenge.query.get(challenge_id)
+            if not challenge:
+                # fallback to a default active coop challenge
+                challenge = Challenge.query.filter_by(category='coop', is_active=True).first()
+                if not challenge:
+                    return jsonify({'error': 'No co-op challenges available'}), 404
+                challenge_id = challenge.id
+        else:
+            # Get default coop challenge
+            challenge = Challenge.query.filter_by(category='coop', is_active=True).first()
+            if not challenge:
+                return jsonify({'error': 'No co-op challenges available'}), 404
+            challenge_id = challenge.id
+
+        # Generate unique session code
+        session_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        while CoopSession.query.filter_by(session_code=session_code).first():
+            session_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+        # Create session
+        coop_session = CoopSession(
+            creator_id=current_user.id,
+            challenge_id=challenge_id,
+            session_code=session_code,
+            creator_team=creator_team,
+            participants=[{'user_id': current_user.id, 'team': creator_team}],
+            event_log=[]
+        )
+
+        db.session.add(coop_session)
+        db.session.commit()
+
+        # Generate shareable link
+        invite_link = url_for('api.join_coop_session', session_code=session_code, _external=True)
+
         return jsonify({
             'success': True,
-            'redirect_url': url_for('challenges.play_coop', session_id=session_id)
+            'session_id': coop_session.id,
+            'session_code': session_code,
+            'invite_link': invite_link,
+            'creator_team': creator_team
         })
+    except Exception as e:
+        # Log traceback for debugging and return JSON error in dev
+        tb = traceback.format_exc()
+        try:
+            current_app.logger.error('Error in create_coop_session:\n%s', tb)
+        except Exception:
+            # if current_app isn't available, print to stderr
+            print(tb)
+        return jsonify({'success': False, 'error': 'Internal server error', 'details': str(e)}), 500
+
+@api_bp.route('/coop/join/<session_code>', methods=['GET', 'POST'])
+@login_required
+def join_coop_session(session_code):
+    """Join an existing co-op session"""
+    coop_session = CoopSession.query.filter_by(session_code=session_code).first()
     
-    # Add user to the session (default to red team if blue is taken)
-    blue_team_count = sum(1 for p in participants if p['team'] == 'blue')
-    team = 'blue' if blue_team_count == 0 else 'red'
+    if not coop_session:
+        if request.method == 'POST':
+            return jsonify({'error': 'Session not found'}), 404
+        flash('Session not found', 'error')
+        return redirect(url_for('main.trials'))
     
-    new_participant = {'user_id': current_user.id, 'username': current_user.username, 'team': team}
+    if coop_session.status == 'completed':
+        flash('This session has already ended', 'error')
+        return redirect(url_for('main.trials'))
     
-    # Use mutable_json_type to handle JSON updates
-    coop_session.participants.append(new_participant)
+    # Check if user already in session
+    participants = coop_session.participants or []
+    user_in_session = any(p['user_id'] == current_user.id for p in participants)
     
-    db.session.commit()
+    if not user_in_session:
+        if len(participants) >= 2:
+            flash('Session is full', 'error')
+            return redirect(url_for('main.trials'))
+        
+        # Assign opposite team
+        opponent_team = 'blue' if coop_session.creator_team == 'red' else 'red'
+        participants.append({'user_id': current_user.id, 'team': opponent_team})
+        coop_session.participants = participants
+        coop_session.status = 'in_progress'
+        coop_session.started_at = datetime.utcnow()
+        db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'redirect_url': url_for('challenges.play_coop', session_id=session_id)
-    })
+    if request.method == 'POST':
+        return jsonify({'success': True, 'redirect_url': url_for('challenges.play_coop', session_id=coop_session.id)})
+    
+    return redirect(url_for('challenges.play_coop', session_id=coop_session.id))
 
 @challenges_bp.route('/coop/play/<session_id>')
 @login_required
 def play_coop(session_id):
-    """Co-op gameplay page"""
-    coop_session = CoopSession.query.filter_by(session_id=session_id).first()
+    """Play co-op challenge"""
+    coop_session = CoopSession.query.get(session_id)
     if not coop_session:
-        flash('Co-op session not found', 'error')
+        flash('Session not found', 'error')
         return redirect(url_for('main.trials'))
-    # Allow access to the session page regardless of participation status.
-    # The SocketIO logic in events.py will handle adding the user as a participant.
-    # The original check was:
+    
+    # Check if user is participant
     participants = coop_session.participants or []
     user_participant = next((p for p in participants if p['user_id'] == current_user.id), None)
+    
     if not user_participant:
         flash('You are not a participant in this session', 'error')
         return redirect(url_for('main.trials'))
@@ -424,83 +458,77 @@ def play_coop(session_id):
 def dashboard():
     """Admin dashboard"""
     if not current_user.is_admin:
-        flash('Admin access required', 'error')
-        return redirect(url_for('main.dashboard'))
+        flash('Access denied. Admin privileges required.', 'error')
+        return redirect(url_for('main.index'))
     
-    # Fetch stats
     total_users = User.query.count()
     total_challenges = Challenge.query.count()
     total_attempts = ChallengeAttempt.query.count()
+    total_sessions = CoopSession.query.count()
+    recent_logs = AdminLog.query.order_by(AdminLog.created_at.desc()).limit(10).all()
     
-    # Fetch recent logs
-    logs = AdminLog.query.order_by(AdminLog.timestamp.desc()).limit(20).all()
-    
-    return render_template('admin/dashboard.html', 
+    return render_template('admin/dashboard.html',
                          total_users=total_users,
                          total_challenges=total_challenges,
                          total_attempts=total_attempts,
-                         logs=logs)
-
-@admin_bp.route('/users')
-@login_required
-def manage_users():
-    """Manage users"""
-    if not current_user.is_admin:
-        return redirect(url_for('main.dashboard'))
-    
-    users = User.query.all()
-    return render_template('admin/users.html', users=users)
+                         total_sessions=total_sessions,
+                         recent_logs=recent_logs)
 
 @admin_bp.route('/challenges')
 @login_required
 def manage_challenges():
     """Manage challenges"""
     if not current_user.is_admin:
-        return redirect(url_for('main.dashboard'))
+        flash('Access denied', 'error')
+        return redirect(url_for('main.index'))
     
     challenges = Challenge.query.all()
     return render_template('admin/challenges.html', challenges=challenges)
 
-@admin_bp.route('/challenges/create', methods=['GET', 'POST'])
+@admin_bp.route('/challenges/add', methods=['GET', 'POST'])
 @login_required
-def create_challenge():
-    """Create a new challenge"""
+def add_challenge():
+    """Add new challenge"""
     if not current_user.is_admin:
-        return redirect(url_for('main.dashboard'))
+        flash('Access denied', 'error')
+        return redirect(url_for('main.index'))
     
     if request.method == 'POST':
-        # Get form data
-        title = request.form.get('title')
-        description = request.form.get('description')
-        category = request.form.get('category')
-        difficulty = request.form.get('difficulty')
-        challenge_type = request.form.get('challenge_type')
-        
-        # Create challenge
         challenge = Challenge(
-            title=title,
-            description=description,
-            category=category,
-            difficulty=difficulty,
-            challenge_type=challenge_type
+            title=request.form.get('title'),
+            description=request.form.get('description'),
+            category=request.form.get('category'),
+            difficulty=request.form.get('difficulty'),
+            challenge_type=request.form.get('challenge_type'),
+            max_score=int(request.form.get('max_score', 100)),
+            time_limit=int(request.form.get('time_limit', 300)),
+            solution_explanation=request.form.get('solution_explanation')
         )
         db.session.add(challenge)
+        
+        # Log admin action
+        log = AdminLog(
+            admin_id=current_user.id,
+            action='Added new challenge',
+            target_type='challenge',
+            target_id=challenge.id,
+            details={'title': challenge.title}
+        )
+        db.session.add(log)
         db.session.commit()
         
-        # Log action
-        log_admin_action(f'Created challenge: {title}')
-        
-        flash('Challenge created successfully', 'success')
+        flash('Challenge added successfully', 'success')
         return redirect(url_for('admin.manage_challenges'))
     
-    return render_template('admin/create_challenge.html')
+    return render_template('admin/add_challenge.html')
 
-@admin_bp.route('/challenges/edit/<challenge_id>', methods=['GET', 'POST'])
+@admin_bp.route('/challenges/<challenge_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_challenge(challenge_id):
-    """Edit an existing challenge"""
+    """Edit challenge"""
     if not current_user.is_admin:
-        return redirect(url_for('main.dashboard'))
+        flash('Access denied', 'error')
+        return redirect(url_for('main.index'))
     
     challenge = Challenge.query.get(challenge_id)
     if not challenge:
@@ -508,134 +536,134 @@ def edit_challenge(challenge_id):
         return redirect(url_for('admin.manage_challenges'))
     
     if request.method == 'POST':
-        # Update challenge data
         challenge.title = request.form.get('title')
         challenge.description = request.form.get('description')
         challenge.category = request.form.get('category')
         challenge.difficulty = request.form.get('difficulty')
         challenge.challenge_type = request.form.get('challenge_type')
-        challenge.is_active = 'is_active' in request.form
+        challenge.max_score = int(request.form.get('max_score', 100))
+        challenge.time_limit = int(request.form.get('time_limit', 300))
+        challenge.solution_explanation = request.form.get('solution_explanation')
+        challenge.updated_at = datetime.utcnow()
         
+        # Log admin action
+        log = AdminLog(
+            admin_id=current_user.id,
+            action='Edited challenge',
+            target_type='challenge',
+            target_id=challenge.id,
+            details={'title': challenge.title}
+        )
+        db.session.add(log)
         db.session.commit()
-        
-        # Log action
-        log_admin_action(f'Edited challenge: {challenge.title}')
         
         flash('Challenge updated successfully', 'success')
         return redirect(url_for('admin.manage_challenges'))
     
     return render_template('admin/edit_challenge.html', challenge=challenge)
 
-@admin_bp.route('/challenges/delete/<challenge_id>', methods=['POST'])
+@admin_bp.route('/challenges/<challenge_id>/delete', methods=['POST'])
 @login_required
 def delete_challenge(challenge_id):
-    """Delete a challenge"""
+    """Delete challenge"""
     if not current_user.is_admin:
-        return redirect(url_for('main.dashboard'))
+        return jsonify({'error': 'Access denied'}), 403
     
     challenge = Challenge.query.get(challenge_id)
-    if challenge:
-        # Log action before deleting
-        log_admin_action(f'Deleted challenge: {challenge.title}')
-        
-        db.session.delete(challenge)
-        db.session.commit()
-        flash('Challenge deleted successfully', 'success')
-    else:
-        flash('Challenge not found', 'error')
-        
-    return redirect(url_for('admin.manage_challenges'))
+    if not challenge:
+        return jsonify({'error': 'Challenge not found'}), 404
+    
+    # Log admin action
+    log = AdminLog(
+        admin_id=current_user.id,
+        action='Deleted challenge',
+        target_type='challenge',
+        target_id=challenge.id,
+        details={'title': challenge.title}
+    )
+    db.session.add(log)
+    db.session.delete(challenge)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Challenge deleted'})
 
-# ==================== API ROUTES ====================
-
-@api_bp.route('/bot/interact', methods=['POST'])
+@admin_bp.route('/users')
 @login_required
-def bot_interact():
-    """Handle interaction with the bot AI"""
-    data = request.get_json() or {}
-    attempt_id = data.get('attempt_id')
-    user_message = data.get('message', '').strip()
+def manage_users():
+    """Manage users"""
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('main.index'))
     
-    if not attempt_id or not user_message:
-        return jsonify({'error': 'Missing data'}), 400
-    
-    # Retrieve bot state from session
-    bot_config = session.get(f'bot_{attempt_id}')
-    if not bot_config:
-        return jsonify({'error': 'Bot session not found'}), 404
-    
-    # Initialize bot with stored state
-    bot = BotAI(difficulty=bot_config['difficulty'], role=bot_config['role'])
-    bot.conversation_step = bot_config.get('step', 0)
-    
-    # Get bot response
-    try:
-        bot_response = bot.get_response(user_message)
-    except Exception as e:
-        current_app.logger.error(f"Bot AI error: {e}\n{traceback.format_exc()}")
-        return jsonify({'error': 'An error occurred with the AI bot.'}), 500
-    
-    # Update bot step in session
-    bot_config['step'] = bot.conversation_step
-    session[f'bot_{attempt_id}'] = bot_config
-    
-    return jsonify({'response': bot_response})
+    users = User.query.all()
+    return render_template('admin/users.html', users=users)
 
-# ==================== HELPER FUNCTIONS ====================
-
-def log_admin_action(action):
-    """Log an admin action"""
-    log = AdminLog(user_id=current_user.id, action=action)
+@admin_bp.route('/users/<user_id>/toggle', methods=['POST'])
+@login_required
+def toggle_user(user_id):
+    """Toggle user active status"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    user.is_active = not user.is_active
+    
+    # Log admin action
+    log = AdminLog(
+        admin_id=current_user.id,
+        action='Toggled user status',
+        target_type='user',
+        target_id=user.id,
+        details={'username': user.username, 'is_active': user.is_active}
+    )
     db.session.add(log)
     db.session.commit()
-
-
-# ==================== ERROR HANDLERS ====================
-
-@main_bp.app_errorhandler(404)
-def not_found_error(error):
-    return render_template('404.html'), 404
-
-@main_bp.app_errorhandler(500)
-def internal_error(error):
-    db.session.rollback() # Rollback in case of DB error
-    return render_template('500.html'), 500
-
-
-# ==================== UTILITY ROUTES ====================
-
-@main_bp.route('/generate-sitemap')
-def generate_sitemap():
-    """Generate a simple sitemap for SEO and testing"""
-    links = []
-    for rule in current_app.url_map.iter_rules():
-        # Filter out rules with arguments and internal/static routes
-        if "GET" in rule.methods and len(rule.arguments) == 0 and \
-           rule.endpoint not in ('static', 'admin.static'):
-            links.append(url_for(rule.endpoint, _external=True))
     
-    return "<br>".join(links)
+    return jsonify({'success': True, 'is_active': user.is_active})
 
-@main_bp.route('/reset-password-for-user/<username>', methods=['GET'])
+@admin_bp.route('/sessions')
 @login_required
-def reset_password_for_user(username):
-    """A utility route for admins to reset a user's password. Should be protected and logged."""
+def view_sessions():
+    """View all co-op sessions"""
     if not current_user.is_admin:
-        flash('Admin access required', 'error')
-        return redirect(url_for('main.dashboard'))
+        flash('Access denied', 'error')
+        return redirect(url_for('main.index'))
+    
+    sessions = CoopSession.query.order_by(CoopSession.created_at.desc()).all()
+    return render_template('admin/sessions.html', sessions=sessions)
 
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        flash(f'User {username} not found.', 'error')
-        return redirect(url_for('admin.manage_users'))
+@admin_bp.route('/logs')
+@login_required
+def view_logs():
+    """View admin logs"""
+    if not current_user.is_admin:
+        flash('Access denied', 'error')
+        return redirect(url_for('main.index'))
+    
+    logs = AdminLog.query.order_by(AdminLog.created_at.desc()).limit(100).all()
+    return render_template('admin/logs.html', logs=logs)
 
-    # Generate a random temporary password
-    temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-    user.set_password(temp_password)
+@admin_bp.route('/leaderboard/reset', methods=['POST'])
+@login_required
+def reset_leaderboard():
+    """Reset leaderboard (delete all attempts)"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    # Delete all attempts
+    ChallengeAttempt.query.delete()
+    
+    # Log admin action
+    log = AdminLog(
+        admin_id=current_user.id,
+        action='Reset leaderboard',
+        target_type='leaderboard',
+        details={'message': 'All challenge attempts deleted'}
+    )
+    db.session.add(log)
     db.session.commit()
-
-    # Log the action
-    log_admin_action(f'Reset password for user: {username}')
-
-    flash(f'Password for {username} has been reset to: {temp_password}', 'success')
-    return redirect(url_for('admin.manage_users'))
+    
+    return jsonify({'success': True, 'message': 'Leaderboard reset successfully'})
